@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.myempty.tictactoe.app-mergeDebugResources-58:/values-sw600dp-v13/values-sw600dp-v13.xml",
+            "outputFile": "com.example.myempty.tictactoe.app-mergeDebugResources-65:/values-sw600dp-v13/values-sw600dp-v13.xml",
             "map": [
                 {
                     "source": "/data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/e43769dcc79e0d3637e34ac1aeb0e44b/transformed/material-1.13.0/res/values-sw600dp-v13/values-sw600dp-v13.xml",

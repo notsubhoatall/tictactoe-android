@@ -1,17 +1,47 @@
 {
   "allFiles": [
     {
+      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/build.gradle.kts",
+      "selection": {
+        "end": {
+          "column": 19,
+          "index": 426,
+          "line": 14
+        },
+        "start": {
+          "column": 19,
+          "index": 426,
+          "line": 14
+        }
+      }
+    },
+    {
+      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/kotlin/com/example/myempty/tictactoe/OnlineMultiplayerManager.kt",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 5186,
+          "line": 152
+        },
+        "start": {
+          "column": 0,
+          "index": 5186,
+          "line": 152
+        }
+      }
+    },
+    {
       "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/kotlin/com/example/myempty/tictactoe/MainActivity.kt",
       "selection": {
         "end": {
-          "column": 46,
-          "index": 13546,
-          "line": 345
+          "column": 0,
+          "index": 32536,
+          "line": 862
         },
         "start": {
-          "column": 46,
-          "index": 13546,
-          "line": 345
+          "column": 0,
+          "index": 32536,
+          "line": 862
         }
       }
     },
@@ -20,28 +50,13 @@
       "selection": {
         "end": {
           "column": 0,
-          "index": 1895,
-          "line": 72
+          "index": 3741,
+          "line": 128
         },
         "start": {
           "column": 0,
-          "index": 1895,
-          "line": 72
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/kotlin/com/example/myempty/tictactoe/GameLogic.kt",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 2316,
-          "line": 73
-        },
-        "start": {
-          "column": 0,
-          "index": 2316,
-          "line": 73
+          "index": 3741,
+          "line": 128
         }
       }
     },
@@ -49,122 +64,17 @@
       "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml",
       "selection": {
         "end": {
-          "column": 0,
-          "index": 2103,
-          "line": 49
+          "column": 4,
+          "index": 1558,
+          "line": 31
         },
         "start": {
-          "column": 0,
-          "index": 2103,
-          "line": 49
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/res/layout/activity_main.xml",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 10519,
-          "line": 280
-        },
-        "start": {
-          "column": 0,
-          "index": 10519,
-          "line": 280
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/build.gradle.kts",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 0,
-          "line": 0
-        },
-        "start": {
-          "column": 0,
-          "index": 0,
-          "line": 0
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/build.gradle.kts",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 1645,
-          "line": 55
-        },
-        "start": {
-          "column": 0,
-          "index": 1645,
-          "line": 55
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/gradle/libs.versions.toml",
-      "selection": {
-        "end": {
-          "column": 87,
-          "index": 227,
-          "line": 9
-        },
-        "start": {
-          "column": 87,
-          "index": 227,
-          "line": 9
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/res/raw/bgm.mp3",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 0,
-          "line": 0
-        },
-        "start": {
-          "column": 0,
-          "index": 0,
-          "line": 0
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/kotlin/com/example/myempty/tictactoe/NearbyConnectionManager.kt",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 4414,
-          "line": 115
-        },
-        "start": {
-          "column": 0,
-          "index": 4414,
-          "line": 115
-        }
-      }
-    },
-    {
-      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/res/values/strings.xml",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 74,
-          "line": 3
-        },
-        "start": {
-          "column": 0,
-          "index": 74,
-          "line": 3
+          "column": 4,
+          "index": 1558,
+          "line": 31
         }
       }
     }
   ],
-  "selectedFile": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/kotlin/com/example/myempty/tictactoe/MainActivity.kt"
+  "selectedFile": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml"
 }

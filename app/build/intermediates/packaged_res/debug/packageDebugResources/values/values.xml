@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Tic Tac Toe</string>
+    <string name="gcm_defaultSenderId" translatable="false">1029257978377</string>
+    <string name="google_api_key" translatable="false">AIzaSyCpwNrf18Mxd-KULlAsRPurHoHwTfotPkU</string>
+    <string name="google_app_id" translatable="false">1:1029257978377:android:43d35d3aa12506dd578ed8</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCpwNrf18Mxd-KULlAsRPurHoHwTfotPkU</string>
+    <string name="google_storage_bucket" translatable="false">tictactoe-online-65169.firebasestorage.app</string>
+    <string name="project_id" translatable="false">tictactoe-online-65169</string>
     <style name="AppTheme" parent="Base.AppTheme"/>
     <style name="Base.AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
   </style>

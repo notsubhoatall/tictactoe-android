@@ -1,8 +1,8 @@
 package com.example.myempty.tictactoe
 
-import androidx.compose.ui.platform.LocalUriHandler
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -30,11 +31,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 
 enum class AppThemeMode {
     DEFAULT, LIGHT, DARK, AMOLED
+}
+
+enum class Screen {
+    MENU,
+    GAME,
+    NEARBY_LOBBY,
+    ONLINE
 }
 
 data class CustomThemeColors(
@@ -94,8 +109,72 @@ fun getAppColors(themeMode: AppThemeMode): CustomThemeColors {
     }
 }
 
-enum class Screen {
-    MENU, GAME, NEARBY_LOBBY
+data class UpdateInfo(
+    val isAvailable: Boolean = false,
+    val latestVersion: String = "",
+    val releaseNotes: String = "",
+    val downloadUrl: String = ""
+)
+
+object GitHubUpdateChecker {
+    private const val GITHUB_REPO = "notsubhoatall/Tic-Tac-Toe"
+
+    suspend fun checkForUpdates(context: Context): UpdateInfo = withContext(Dispatchers.IO) {
+        try {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            val currentVersion = packageInfo.versionName ?: "1.0"
+
+            val url = URL("https://api.github.com/repos/$GITHUB_REPO/releases/latest")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 4000
+                readTimeout = 4000
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/vnd.github.v3+json")
+            }
+
+            if (connection.responseCode == 200) {
+                val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                val response = reader.readText()
+                reader.close()
+
+                val json = JSONObject(response)
+                val tagName = json.optString("tag_name", "").removePrefix("v").trim()
+                val htmlUrl = json.optString("html_url", "https://github.com/$GITHUB_REPO/releases")
+                val notes = json.optString("body", "A new update is available on GitHub!")
+
+                if (tagName.isNotEmpty() && isNewerVersion(currentVersion, tagName)) {
+                    return@withContext UpdateInfo(
+                        isAvailable = true,
+                        latestVersion = tagName,
+                        releaseNotes = notes,
+                        downloadUrl = htmlUrl
+                    )
+                }
+            }
+        } catch (_: Exception) {
+            // Fail silently if offline or repo release is missing
+        }
+        UpdateInfo(isAvailable = false)
+    }
+
+    private fun isNewerVersion(current: String, latest: String): Boolean {
+        val currParts = current.split(".").mapNotNull { it.toIntOrNull() }
+        val latestParts = latest.split(".").mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(currParts.size, latestParts.size)
+
+        for (i in 0 until maxLen) {
+            val currNum = currParts.getOrElse(i) { 0 }
+            val latestNum = latestParts.getOrElse(i) { 0 }
+            if (latestNum > currNum) return true
+            if (latestNum < currNum) return false
+        }
+        return false
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -158,6 +237,9 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     currentScreen = Screen.GAME
                                 }
+                            },
+                            onStartOnline = {
+                                currentScreen = Screen.ONLINE
                             }
                         )
                         Screen.NEARBY_LOBBY -> NearbyLobbyScreen(
@@ -205,6 +287,11 @@ class MainActivity : ComponentActivity() {
                                 currentScreen = Screen.MENU
                             }
                         )
+                        Screen.ONLINE -> OnlineGameScreen(
+                            onBackToLocal = {
+                                currentScreen = Screen.MENU
+                            }
+                        )
                     }
                 }
             }
@@ -217,10 +304,63 @@ fun MenuScreen(
     themeColors: CustomThemeColors,
     currentTheme: AppThemeMode,
     onThemeSelected: (AppThemeMode) -> Unit,
-    onStartGame: (GameMode) -> Unit
+    onStartGame: (GameMode) -> Unit,
+    onStartOnline: () -> Unit
 ) {
     val context = LocalContext.current
-    var isMusicOn by remember { mutableStateOf(SoundManager.isMusicPlaying) }
+    val uriHandler = LocalUriHandler.current
+
+    var updateInfo by remember { mutableStateOf(UpdateInfo()) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val result = GitHubUpdateChecker.checkForUpdates(context)
+        if (result.isAvailable) {
+            updateInfo = result
+            showUpdateDialog = true
+        }
+    }
+
+    if (showUpdateDialog && updateInfo.isAvailable) {
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            title = {
+                Text("🚀 New Update Available!", fontWeight = FontWeight.Bold, color = themeColors.textPrimary)
+            },
+            text = {
+                Column {
+                    Text(
+                        "Version v${updateInfo.latestVersion} is now available.",
+                        color = themeColors.textPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        updateInfo.releaseNotes.take(200) + if (updateInfo.releaseNotes.length > 200) "..." else "",
+                        fontSize = 13.sp,
+                        color = themeColors.textSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUpdateDialog = false
+                        uriHandler.openUri(updateInfo.downloadUrl)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = themeColors.accentX)
+                ) {
+                    Text("Download", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpdateDialog = false }) {
+                    Text("Later", color = themeColors.textSecondary)
+                }
+            },
+            containerColor = themeColors.cardBg
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -231,14 +371,20 @@ fun MenuScreen(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {
-                SoundManager.toggleBgm(context)
-                isMusicOn = SoundManager.isMusicPlaying
-            }) {
-                Text(text = if (isMusicOn) "🔊" else "🔇", fontSize = 20.sp)
+            // Update badge (if an update is available)
+            if (updateInfo.isAvailable) {
+                TextButton(onClick = { showUpdateDialog = true }) {
+                    Text("Update 🚀", color = themeColors.accentO, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            } else {
+                Spacer(modifier = Modifier.width(1.dp))
             }
+
+            // Music Controls (Mute + Playlist)
+            MusicControlBar(themeColors = themeColors)
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -263,37 +409,50 @@ fun MenuScreen(
                 onClick = { onStartGame(GameMode.AI) },
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
-                    .height(52.dp),
+                    .height(50.dp),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.5.dp, themeColors.accentX)
             ) {
                 Text("VS AI (Single Player)", color = themeColors.accentX, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedButton(
                 onClick = { onStartGame(GameMode.TWO_PLAYER) },
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
-                    .height(52.dp),
+                    .height(50.dp),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.5.dp, themeColors.accentO)
             ) {
                 Text("2 Players (Pass & Play)", color = themeColors.accentO, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedButton(
                 onClick = { onStartGame(GameMode.NEARBY_P2P) },
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
-                    .height(52.dp),
+                    .height(50.dp),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.5.dp, Color(0xFF00E676))
             ) {
                 Text("Nearby / Hotspot Play", color = Color(0xFF00E676), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = onStartOnline,
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(50.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9100))
+            ) {
+                Text("Online Multiplayer (Cloud) 🌐", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
         }
 
@@ -332,9 +491,8 @@ fun MenuScreen(
                     }
                 }
             }
-                                Spacer(modifier = Modifier.height(18.dp))
 
-            val uriHandler = LocalUriHandler.current
+            Spacer(modifier = Modifier.height(18.dp))
 
             Text(
                 text = "Crafted with Jetpack Compose",
@@ -349,12 +507,11 @@ fun MenuScreen(
                 color = themeColors.accentX,
                 modifier = Modifier
                     .padding(top = 2.dp)
-                    .clickable {
+                                        .clickable {
                         uriHandler.openUri("https://github.com/notsubhoatall")
                     }
             )
-            
-            }
+        }
     }
 }
 
@@ -492,13 +649,11 @@ fun GameScreen(
 ) {
     val engine = remember { GameEngine() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     var board by remember { mutableStateOf(List(9) { "" }) }
     var currentPlayer by remember { mutableStateOf("X") }
     var winner by remember { mutableStateOf<String?>(null) }
     var isThinking by remember { mutableStateOf(false) }
-    var isMusicOn by remember { mutableStateOf(SoundManager.isMusicPlaying) }
 
     fun resetGame(notifyPeer: Boolean = true) {
         SoundManager.playMoveSound()
@@ -513,14 +668,12 @@ fun GameScreen(
         }
     }
 
-    // Peer requested restart
     LaunchedEffect(remoteRestartSignal) {
         if (remoteRestartSignal > 0) {
             resetGame(notifyPeer = false)
         }
     }
 
-    // Remote move listener
     LaunchedEffect(remoteMove) {
         remoteMove?.let { index ->
             if (winner == null && board[index].isEmpty()) {
@@ -537,7 +690,7 @@ fun GameScreen(
                     currentPlayer = if (currentPlayer == "X") "O" else "X"
                 }
             }
-            onMoveProcessed() // Clear the move so it cannot re-fire
+            onMoveProcessed()
         }
     }
 
@@ -557,7 +710,7 @@ fun GameScreen(
 
         val outcome = engine.checkWinner(board)
         if (outcome != null) {
-                        winner = outcome
+            winner = outcome
             if (winner == "Draw") SoundManager.playDrawSound() else SoundManager.playWinSound()
             return
         }
@@ -612,17 +765,15 @@ fun GameScreen(
                     GameMode.AI -> "VS AI"
                     GameMode.TWO_PLAYER -> "2 Players"
                     GameMode.NEARBY_P2P -> "Nearby P2P (You: $myRole)"
+                    else -> "Game"
                 },
                 color = themeColors.textPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 18.sp
             )
-            IconButton(onClick = {
-                SoundManager.toggleBgm(context)
-                isMusicOn = SoundManager.isMusicPlaying
-            }) {
-                Text(if (isMusicOn) "🔊" else "🔇", fontSize = 18.sp)
-            }
+
+            // Music Controls (Mute + Playlist)
+            MusicControlBar(themeColors = themeColors)
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
