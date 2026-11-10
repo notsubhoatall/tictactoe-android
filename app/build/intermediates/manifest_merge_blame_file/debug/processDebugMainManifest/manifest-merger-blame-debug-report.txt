@@ -85,12 +85,12 @@
 47-->[androidx.core:core:1.17.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/2d2a21882d45993d7845ed726c07de92/transformed/core-1.17.0/AndroidManifest.xml:28:18-86
 48        android:debuggable="true"
 49        android:extractNativeLibs="true"
-50        android:icon="@mipmap/ic_launcher"
-50-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:34:9-43
+50        android:icon="@drawable/ic_launcher"
+50-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:34:9-45
 51        android:label="@string/app_name"
-51-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:35:9-41
-52        android:roundIcon="@mipmap/ic_launcher_round"
-52-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:36:9-54
+51-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:36:9-41
+52        android:roundIcon="@drawable/ic_launcher"
+52-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:35:9-50
 53        android:supportsRtl="true"
 53-->/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:37:9-35
 54        android:theme="@style/AppTheme" >

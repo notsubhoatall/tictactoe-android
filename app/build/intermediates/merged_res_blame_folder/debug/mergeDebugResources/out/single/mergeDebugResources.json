@@ -20,6 +20,10 @@
         "source": "com.example.myempty.tictactoe.app-main-62:/mipmap-mdpi/ic_launcher_round.webp"
     },
     {
+        "merged": "com.example.myempty.tictactoe.app-debug-60:/drawable_ic_launcher.png.flat",
+        "source": "com.example.myempty.tictactoe.app-main-62:/drawable/ic_launcher.png"
+    },
+    {
         "merged": "com.example.myempty.tictactoe.app-debug-60:/mipmap-hdpi_ic_launcher.webp.flat",
         "source": "com.example.myempty.tictactoe.app-main-62:/mipmap-hdpi/ic_launcher.webp"
     },

@@ -4,14 +4,14 @@
       "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/kotlin/com/example/myempty/tictactoe/MainActivity.kt",
       "selection": {
         "end": {
-          "column": 0,
-          "index": 25784,
-          "line": 688
+          "column": 46,
+          "index": 13546,
+          "line": 345
         },
         "start": {
-          "column": 0,
-          "index": 25784,
-          "line": 688
+          "column": 46,
+          "index": 13546,
+          "line": 345
         }
       }
     },
@@ -50,13 +50,13 @@
       "selection": {
         "end": {
           "column": 0,
-          "index": 1487,
-          "line": 30
+          "index": 2103,
+          "line": 49
         },
         "start": {
           "column": 0,
-          "index": 1487,
-          "line": 30
+          "index": 2103,
+          "line": 49
         }
       }
     },
@@ -147,6 +147,21 @@
           "column": 0,
           "index": 4414,
           "line": 115
+        }
+      }
+    },
+    {
+      "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/res/values/strings.xml",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 74,
+          "line": 3
+        },
+        "start": {
+          "column": 0,
+          "index": 74,
+          "line": 3
         }
       }
     }

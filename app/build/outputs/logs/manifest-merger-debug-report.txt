@@ -175,11 +175,11 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /data/user/
 	android:supportsRtl
 		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:37:9-35
 	android:label
-		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:35:9-41
+		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:36:9-41
 	android:roundIcon
-		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:36:9-54
+		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:35:9-50
 	android:icon
-		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:34:9-43
+		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:34:9-45
 	android:allowBackup
 		ADDED from /data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml:33:9-35
 	android:theme

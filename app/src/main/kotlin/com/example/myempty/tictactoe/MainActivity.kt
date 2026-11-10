@@ -1,5 +1,6 @@
 package com.example.myempty.tictactoe
 
+import androidx.compose.ui.platform.LocalUriHandler
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
@@ -331,7 +332,29 @@ fun MenuScreen(
                     }
                 }
             }
-        }
+                                Spacer(modifier = Modifier.height(18.dp))
+
+            val uriHandler = LocalUriHandler.current
+
+            Text(
+                text = "Crafted with Jetpack Compose",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = themeColors.textSecondary.copy(alpha = 0.8f)
+            )
+            Text(
+                text = "Built by notsubhoatall ↗",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = themeColors.accentX,
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .clickable {
+                        uriHandler.openUri("https://github.com/notsubhoatall")
+                    }
+            )
+            
+            }
     }
 }
 
