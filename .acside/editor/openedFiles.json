@@ -4,14 +4,14 @@
       "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/build.gradle.kts",
       "selection": {
         "end": {
-          "column": 19,
-          "index": 426,
-          "line": 14
+          "column": 24,
+          "index": 498,
+          "line": 17
         },
         "start": {
-          "column": 19,
-          "index": 426,
-          "line": 14
+          "column": 24,
+          "index": 498,
+          "line": 17
         }
       }
     },
@@ -76,5 +76,5 @@
       }
     }
   ],
-  "selectedFile": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/src/main/AndroidManifest.xml"
+  "selectedFile": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/build.gradle.kts"
 }
