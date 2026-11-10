@@ -1,0 +1,30 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+id btn0
+id btn1
+id btn2
+id btn3
+id btn4
+id btn5
+id btn6
+id btn7
+id btn8
+id btnBackMenu
+id btnPassPlay
+id btnRestart
+id btnVsAi
+id gameLayout
+id menuLayout
+id txtGameMode
+id txtStatus
+layout activity_main
+mipmap ic_launcher
+mipmap ic_launcher_round
+raw bgm
+string app_name
+style AppTheme
+style Base.AppTheme
+xml backup_rules
+xml data_extraction_rules
