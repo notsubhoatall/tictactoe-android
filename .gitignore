@@ -5,3 +5,7 @@ app/build/
 local.properties
 .idea/
 .acs/
+
+build/
+app/build/
+*.apk
