@@ -4,13 +4,13 @@
       "file": "/data/user/0/com.tom.rv2ide/files/home/ACSProjects/tictactoe/app/build.gradle.kts",
       "selection": {
         "end": {
-          "column": 24,
-          "index": 498,
+          "column": 26,
+          "index": 500,
           "line": 17
         },
         "start": {
-          "column": 24,
-          "index": 498,
+          "column": 26,
+          "index": 500,
           "line": 17
         }
       }
@@ -20,13 +20,13 @@
       "selection": {
         "end": {
           "column": 0,
-          "index": 5186,
-          "line": 152
+          "index": 4954,
+          "line": 150
         },
         "start": {
           "column": 0,
-          "index": 5186,
-          "line": 152
+          "index": 4954,
+          "line": 150
         }
       }
     },

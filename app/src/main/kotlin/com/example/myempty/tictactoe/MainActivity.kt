@@ -11,15 +11,17 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -54,8 +56,10 @@ enum class Screen {
 
 data class CustomThemeColors(
     val bg: Color,
-    val cardBg: Color,
-    val cellBg: Color,
+    val surface: Color,
+    val cardBg: Color = surface,
+    val cellBg: Color = surface,
+    val surfaceBorder: Color,
     val textPrimary: Color,
     val textSecondary: Color,
     val accentX: Color,
@@ -67,43 +71,43 @@ data class CustomThemeColors(
 fun getAppColors(themeMode: AppThemeMode): CustomThemeColors {
     return when (themeMode) {
         AppThemeMode.DEFAULT -> CustomThemeColors(
-            bg = Color(0xFF121212),
-            cardBg = Color(0xFF1E1E1E),
-            cellBg = Color(0xFF282828),
-            textPrimary = Color(0xFFEEEEEE),
-            textSecondary = Color(0xFF9E9E9E),
+            bg = Color(0xFF0C0D12),
+            surface = Color(0xFF141620),
+            surfaceBorder = Color(0xFF222536),
+            textPrimary = Color(0xFFFFFFFF),
+            textSecondary = Color(0xFF8A90A6),
             accentX = Color(0xFF00E5FF),
             accentO = Color(0xFFFF4081),
             isLight = false
         )
         AppThemeMode.LIGHT -> CustomThemeColors(
-            bg = Color(0xFFF7F9FC),
-            cardBg = Color(0xFFFFFFFF),
-            cellBg = Color(0xFFEDF2F7),
-            textPrimary = Color(0xFF1A202C),
-            textSecondary = Color(0xFF718096),
+            bg = Color(0xFFF4F6FA),
+            surface = Color(0xFFFFFFFF),
+            surfaceBorder = Color(0xFFDFE3EC),
+            textPrimary = Color(0xFF12141C),
+            textSecondary = Color(0xFF707688),
             accentX = Color(0xFF0070F3),
-            accentO = Color(0xFFE53E3E),
+            accentO = Color(0xFFE53935),
             isLight = true
         )
         AppThemeMode.DARK -> CustomThemeColors(
-            bg = Color(0xFF1E2022),
-            cardBg = Color(0xFF2B2D30),
-            cellBg = Color(0xFF35383C),
-            textPrimary = Color(0xFFE4E6EB),
-            textSecondary = Color(0xFF9AA0A6),
-            accentX = Color(0xFF64B5F6),
-            accentO = Color(0xFFFF8A80),
+            bg = Color(0xFF101116),
+            surface = Color(0xFF191B24),
+            surfaceBorder = Color(0xFF2B2E3D),
+            textPrimary = Color(0xFFFFFFFF),
+            textSecondary = Color(0xFF888E9E),
+            accentX = Color(0xFF5390F5),
+            accentO = Color(0xFFFF5252),
             isLight = false
         )
         AppThemeMode.AMOLED -> CustomThemeColors(
             bg = Color(0xFF000000),
-            cardBg = Color(0xFF111111),
-            cellBg = Color(0xFF1A1A1A),
+            surface = Color(0xFF0E0E10),
+            surfaceBorder = Color(0xFF242428),
             textPrimary = Color(0xFFFFFFFF),
-            textSecondary = Color(0xFF757575),
-            accentX = Color(0xFF00FFFF),
-            accentO = Color(0xFFFF0055),
+            textSecondary = Color(0xFF808080),
+            accentX = Color(0xFF00E5FF),
+            accentO = Color(0xFFFF4081),
             isLight = false
         )
     }
@@ -156,9 +160,7 @@ object GitHubUpdateChecker {
                     )
                 }
             }
-        } catch (_: Exception) {
-            // Fail silently if offline or repo release is missing
-        }
+        } catch (_: Exception) {}
         UpdateInfo(isAvailable = false)
     }
 
@@ -182,13 +184,16 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         if (SoundManager.isMusicPlaying) {
-            SoundManager.startBgm(this)
+            SoundManager.resumeBgm(this)
         }
     }
 
     override fun onPause() {
         super.onPause()
-        SoundManager.pauseBgm()
+        // Respect background music setting
+        if (!SoundManager.playInBackground) {
+            SoundManager.pauseBgm()
+        }
     }
 
     override fun onDestroy() {
@@ -198,13 +203,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val prefs = getSharedPreferences("tictactoe_prefs", Context.MODE_PRIVATE)
+        val initialTheme = try { AppThemeMode.valueOf(prefs.getString("saved_theme", AppThemeMode.DEFAULT.name) ?: AppThemeMode.DEFAULT.name) } catch (_: Exception) { AppThemeMode.DEFAULT }
 
         setContent {
             var currentScreen by remember { mutableStateOf(Screen.MENU) }
             var selectedMode by remember { mutableStateOf(GameMode.AI) }
-            var selectedTheme by remember { mutableStateOf(AppThemeMode.DEFAULT) }
+            var selectedTheme by remember { mutableStateOf(initialTheme) }
 
-            // P2P State
             var myRole by remember { mutableStateOf("X") }
             var connectionStatusText by remember { mutableStateOf("Ready to connect") }
             var lastRemoteMove by remember { mutableStateOf<Int?>(null) }
@@ -223,13 +229,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            Surface(modifier = Modifier.fillMaxSize(), color = colors.bg) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colors.bg)
+            ) {
                 Crossfade(targetState = currentScreen, label = "ScreenTransition") { screen ->
                     when (screen) {
                         Screen.MENU -> MenuScreen(
                             themeColors = colors,
                             currentTheme = selectedTheme,
-                            onThemeSelected = { selectedTheme = it },
+                            onThemeSelected = { selectedTheme = it; prefs.edit().putString("saved_theme", it.name).apply() },
                             onStartGame = { mode ->
                                 selectedMode = mode
                                 if (mode == GameMode.NEARBY_P2P) {
@@ -325,32 +335,31 @@ fun MenuScreen(
         AlertDialog(
             onDismissRequest = { showUpdateDialog = false },
             title = {
-                Text("🚀 New Update Available!", fontWeight = FontWeight.Bold, color = themeColors.textPrimary)
+                Text("Update Available", fontWeight = FontWeight.Bold, color = themeColors.textPrimary)
             },
             text = {
                 Column {
                     Text(
-                        "Version v${updateInfo.latestVersion} is now available.",
+                        "v${updateInfo.latestVersion} is now available.",
                         color = themeColors.textPrimary,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 14.sp
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        updateInfo.releaseNotes.take(200) + if (updateInfo.releaseNotes.length > 200) "..." else "",
-                        fontSize = 13.sp,
+                        updateInfo.releaseNotes.take(180),
+                        fontSize = 12.sp,
                         color = themeColors.textSecondary
                     )
                 }
             },
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         showUpdateDialog = false
                         uriHandler.openUri(updateInfo.downloadUrl)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = themeColors.accentX)
+                    }
                 ) {
-                    Text("Download", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text("Download", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -358,133 +367,170 @@ fun MenuScreen(
                     Text("Later", color = themeColors.textSecondary)
                 }
             },
-            containerColor = themeColors.cardBg
+            containerColor = Color(0xFF141620)
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Top Header
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Update badge (if an update is available)
-            if (updateInfo.isAvailable) {
-                TextButton(onClick = { showUpdateDialog = true }) {
-                    Text("Update 🚀", color = themeColors.accentO, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
-            } else {
-                Spacer(modifier = Modifier.width(1.dp))
-            }
+            Text(
+                text = "TIC TAC TOE",
+                letterSpacing = 2.sp,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = themeColors.textSecondary
+            )
 
-            // Music Controls (Mute + Playlist)
-            MusicControlBar(themeColors = themeColors)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (updateInfo.isAvailable) {
+                    Text(
+                        text = "NEW UPDATE 🚀",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF00E5FF),
+                        modifier = Modifier
+                            .clickable { showUpdateDialog = true }
+                            .padding(end = 12.dp)
+                    )
+                }
+                MusicControlBar(themeColors = themeColors)
+            }
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Vibrant Neon Hero Title (Image 20 style)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
             Row {
-                Text("TIC ", fontSize = 46.sp, fontWeight = FontWeight.Bold, color = themeColors.accentX, fontFamily = FontFamily.Monospace)
-                Text("TAC ", fontSize = 46.sp, fontWeight = FontWeight.Bold, color = themeColors.accentO, fontFamily = FontFamily.Monospace)
-                Text("TOE", fontSize = 46.sp, fontWeight = FontWeight.Bold, color = themeColors.textPrimary, fontFamily = FontFamily.Monospace)
+                Text(
+                    text = "TIC ",
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.SansSerif,
+                    color = Color(0xFF00E5FF)
+                )
+                Text(
+                    text = "TAC ",
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.SansSerif,
+                    color = Color(0xFFFF4081)
+                )
+                Text(
+                    text = "TOE",
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = FontFamily.SansSerif,
+                    color = Color.White
+                )
             }
             Text(
                 text = "Modern Classic",
-                fontSize = 15.sp,
-                color = themeColors.textSecondary,
-                modifier = Modifier.padding(top = 8.dp)
+                fontSize = 14.sp,
+                color = Color(0xFF8A90A6),
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
+        // Colored Border Pill Menu (Image 20 style)
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OutlinedButton(
-                onClick = { onStartGame(GameMode.AI) },
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.5.dp, themeColors.accentX)
-            ) {
-                Text("VS AI (Single Player)", color = themeColors.accentX, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            }
+            // Single Player (Cyan Border)
+            ColoredMenuPill(
+                title = "VS AI (Single Player)",
+                borderColor = Color(0xFF00E5FF),
+                textColor = Color(0xFF00E5FF),
+                bgColor = Color(0xFF00E5FF).copy(alpha = 0.04f),
+                onClick = { onStartGame(GameMode.AI) }
+            )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // 2 Players (Pink/Magenta Border)
+            ColoredMenuPill(
+                title = "2 Players (Pass & Play)",
+                borderColor = Color(0xFFFF4081),
+                textColor = Color(0xFFFF4081),
+                bgColor = Color(0xFFFF4081).copy(alpha = 0.04f),
+                onClick = { onStartGame(GameMode.TWO_PLAYER) }
+            )
 
-            OutlinedButton(
-                onClick = { onStartGame(GameMode.TWO_PLAYER) },
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.5.dp, themeColors.accentO)
-            ) {
-                Text("2 Players (Pass & Play)", color = themeColors.accentO, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            }
+            // Nearby / Hotspot Play (Emerald Green Border)
+            ColoredMenuPill(
+                title = "Nearby / Hotspot Play",
+                borderColor = Color(0xFF00E676),
+                textColor = Color(0xFF00E676),
+                bgColor = Color(0xFF00E676).copy(alpha = 0.04f),
+                onClick = { onStartGame(GameMode.NEARBY_P2P) }
+            )
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = { onStartGame(GameMode.NEARBY_P2P) },
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.5.dp, Color(0xFF00E676))
-            ) {
-                Text("Nearby / Hotspot Play", color = Color(0xFF00E676), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Button(
-                onClick = onStartOnline,
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9100))
-            ) {
-                Text("Online Multiplayer (Cloud) 🌐", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            }
+            // Online Multiplayer (Vibrant Orange Pill)
+            ColoredMenuPill(
+                title = "Online Multiplayer (Cloud) 🌐",
+                borderColor = Color(0xFFFF9100),
+                textColor = Color.White,
+                bgColor = Color(0xFFFF9100),
+                solid = true,
+                onClick = onStartOnline
+            )
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 16.dp)
-        ) {
+        // Theme Selector & Footer
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "Theme",
-                fontSize = 13.sp,
+                text = "Theme",
+                fontSize = 12.sp,
                 color = themeColors.textSecondary,
-                fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(themeColors.surface)
+                    .border(1.dp, themeColors.surfaceBorder, RoundedCornerShape(16.dp))
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 AppThemeMode.values().forEach { mode ->
                     val isSelected = currentTheme == mode
-                    val chipBg = if (isSelected) themeColors.accentX.copy(alpha = 0.2f) else themeColors.cardBg
-
                     Box(
                         modifier = Modifier
-                            .background(chipBg, RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.20f)
+                                else Color.Transparent
+                            )
+                            .border(
+                                1.dp,
+                                if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.5f) else Color.Transparent,
+                                RoundedCornerShape(12.dp)
+                            )
                             .clickable { onThemeSelected(mode) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 7.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = mode.name.lowercase().replaceFirstChar { it.uppercase() },
-                            color = if (isSelected) themeColors.accentX else themeColors.textSecondary,
+                            color = if (isSelected) Color(0xFF00E5FF) else themeColors.textSecondary,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
@@ -492,25 +538,347 @@ fun MenuScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = "Crafted with Jetpack Compose",
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = themeColors.textSecondary.copy(alpha = 0.8f)
+                color = themeColors.textSecondary
             )
             Text(
                 text = "Built by notsubhoatall ↗",
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = themeColors.accentX,
+                color = Color(0xFF00E5FF),
                 modifier = Modifier
+                    .clickable { uriHandler.openUri("https://github.com/notsubhoatall") }
                     .padding(top = 2.dp)
-                                        .clickable {
-                        uriHandler.openUri("https://github.com/notsubhoatall")
-                    }
             )
+        }
+    }
+}
+
+@Composable
+fun ColoredMenuPill(
+    title: String,
+    borderColor: Color,
+    textColor: Color,
+    bgColor: Color,
+    solid: Boolean = false,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clip(RoundedCornerShape(26.dp))
+            .background(bgColor)
+            .border(
+                width = if (solid) 0.dp else 2.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(26.dp)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = title,
+            color = textColor,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun GameScreen(
+    gameMode: GameMode,
+    myRole: String = "X",
+    nearbyManager: NearbyConnectionManager? = null,
+    remoteMove: Int? = null,
+    remoteRestartSignal: Int = 0,
+    onMoveProcessed: () -> Unit = {},
+    themeColors: CustomThemeColors,
+    onBackToMenu: () -> Unit
+) {
+    val context = LocalContext.current
+    val engine = remember { GameEngine() }
+    val scope = rememberCoroutineScope()
+
+    var board by remember { mutableStateOf(List(9) { "" }) }
+    var currentPlayer by remember { mutableStateOf("X") }
+    var winner by remember { mutableStateOf<String?>(null) }
+    var isThinking by remember { mutableStateOf(false) }
+    var scoreX by remember { mutableIntStateOf(0) }
+    var scoreO by remember { mutableIntStateOf(0) }
+    var scoreTies by remember { mutableIntStateOf(0) }
+
+    fun resetGame(notifyPeer: Boolean = true) {
+        SoundManager.playMoveSound()
+        board = List(9) { "" }
+        currentPlayer = "X"
+        winner = null
+        isThinking = false
+        onMoveProcessed()
+
+        if (gameMode == GameMode.NEARBY_P2P && notifyPeer) {
+            nearbyManager?.sendRestart()
+        }
+    }
+
+    LaunchedEffect(remoteRestartSignal) {
+        if (remoteRestartSignal > 0) {
+            resetGame(notifyPeer = false)
+        }
+    }
+
+    LaunchedEffect(remoteMove) {
+        remoteMove?.let { index ->
+            if (winner == null && board[index].isEmpty()) {
+                SoundManager.playMoveSound()
+                val newBoard = board.toMutableList()
+                newBoard[index] = currentPlayer
+                board = newBoard
+
+                val outcome = engine.checkWinner(board)
+                if (outcome != null) {
+                    winner = outcome
+                    if (winner == "Draw") { scoreTies++; SoundManager.playDrawSound() } else if (winner == "X") { scoreX++; SoundManager.playWinSound() } else { scoreO++; SoundManager.playWinSound() }
+                } else {
+                    currentPlayer = if (currentPlayer == "X") "O" else "X"
+                }
+            }
+            onMoveProcessed()
+        }
+    }
+
+    fun handleCellClick(index: Int) {
+        if (board[index].isNotEmpty() || winner != null || isThinking) return
+        if (gameMode == GameMode.NEARBY_P2P && currentPlayer != myRole) return
+
+        SoundManager.playMoveSound()
+        val newBoard = board.toMutableList()
+        newBoard[index] = currentPlayer
+        board = newBoard
+
+        if (gameMode == GameMode.NEARBY_P2P) {
+            nearbyManager?.sendMove(index)
+        }
+
+        val outcome = engine.checkWinner(board)
+        if (outcome != null) {
+            winner = outcome
+            if (winner == "Draw") { scoreTies++; SoundManager.playDrawSound() } else if (winner == "X") { scoreX++; SoundManager.playWinSound() } else { scoreO++; SoundManager.playWinSound() }
+            return
+        }
+
+        if (gameMode == GameMode.AI && currentPlayer == "X") {
+            currentPlayer = "O"
+            isThinking = true
+
+            scope.launch {
+                delay(300)
+                val bestMove = engine.getBestMove(board)
+                if (bestMove != -1) {
+                    val aiBoard = board.toMutableList()
+                    aiBoard[bestMove] = "O"
+                    board = aiBoard
+                    SoundManager.playMoveSound()
+
+                    val aiOutcome = engine.checkWinner(board)
+                    if (aiOutcome != null) {
+                        winner = aiOutcome
+                        if (winner == "Draw") { scoreTies++; SoundManager.playDrawSound() } else if (winner == "X") { scoreX++; SoundManager.playWinSound() } else { scoreO++; SoundManager.playWinSound() }
+                    } else {
+                        currentPlayer = "X"
+                    }
+                }
+                isThinking = false
+            }
+        } else {
+            currentPlayer = if (currentPlayer == "X") "O" else "X"
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Navigation Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "← Back",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = themeColors.textPrimary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onBackToMenu)
+                    .padding(vertical = 4.dp, horizontal = 6.dp)
+            )
+
+            Text(
+                text = when (gameMode) {
+                    GameMode.AI -> "VS AI"
+                    GameMode.TWO_PLAYER -> "2 PLAYERS"
+                    GameMode.NEARBY_P2P -> "NEARBY ($myRole)"
+                    else -> "MATCH"
+                },
+                fontSize = 14.sp,
+                letterSpacing = 1.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF00E5FF)
+            )
+
+            MusicControlBar(themeColors = themeColors)
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(Color(0xFF141620)).border(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.5f), RoundedCornerShape(16.dp)).padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = if (gameMode == GameMode.AI) "YOU (X)" else "X", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color(0xFF00E5FF))
+                    Text(text = "$scoreX", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
+                }
+            }
+            Box(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(Color(0xFF141620)).border(1.5.dp, Color(0xFF2E3244), RoundedCornerShape(16.dp)).padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "TIES", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color(0xFF8A90A6))
+                    Text(text = "$scoreTies", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
+                }
+            }
+            Box(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(Color(0xFF141620)).border(1.5.dp, Color(0xFFFF4081).copy(alpha = 0.5f), RoundedCornerShape(16.dp)).padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = if (gameMode == GameMode.AI) "AI (O)" else "O", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = Color(0xFFFF4081))
+                    Text(text = "$scoreO", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
+                }
+            }
+        }
+        // Status Turn / Winner
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(vertical = 6.dp)
+        ) {
+            val statusText = when {
+                winner == "Draw" -> "Draw Game!"
+                winner != null -> "$winner Wins!"
+                isThinking -> "AI Thinking..."
+                gameMode == GameMode.NEARBY_P2P && currentPlayer == myRole -> "Your Turn ($myRole)"
+                gameMode == GameMode.NEARBY_P2P -> "Opponent's Turn"
+                else -> "Player $currentPlayer's Turn"
+            }
+
+            Text(
+                text = statusText,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    winner == "X" || (winner == null && currentPlayer == "X") -> Color(0xFF00E5FF)
+                    winner == "O" || (winner == null && currentPlayer == "O") -> Color(0xFFFF4081)
+                    else -> Color.White
+                }
+            )
+        }
+
+        // 3x3 Grid
+        Box(
+            modifier = Modifier
+                .size(330.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(themeColors.surface)
+                .border(1.5.dp, themeColors.surfaceBorder, RoundedCornerShape(24.dp))
+                .padding(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                for (row in 0..2) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        for (col in 0..2) {
+                            val index = row * 3 + col
+                            val cellValue = board[index]
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF1E202B))
+                                    .border(
+                                        1.dp,
+                                        if (cellValue.isNotEmpty()) {
+                                            if (cellValue == "X") Color(0xFF00E5FF).copy(alpha = 0.5f)
+                                            else Color(0xFFFF4081).copy(alpha = 0.5f)
+                                        } else Color.Transparent,
+                                        RoundedCornerShape(16.dp)
+                                    )
+                                    .clickable { handleCellClick(index) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = cellValue,
+                                    fontSize = 42.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = if (cellValue == "X") Color(0xFF00E5FF) else Color(0xFFFF4081)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Bottom Controls
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onBackToMenu) {
+                Text("🏠 Home", fontSize = 15.sp, color = Color.White)
+            }
+
+            Button(
+                onClick = { resetGame(notifyPeer = true) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF202330)),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF323646))
+            ) {
+                Text("Restart Game", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+
+            IconButton(onClick = { SoundManager.toggleBgm(context) }) {
+                Text(if (SoundManager.isMusicPlaying) "🔊" else "🔇", fontSize = 20.sp)
+            }
         }
     }
 }
@@ -556,11 +924,7 @@ fun NearbyLobbyScreen(
         val allGranted = requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
-        if (!allGranted) {
-            launcher.launch(requiredPermissions)
-        } else {
-            hasPermissions = true
-        }
+        if (!allGranted) launcher.launch(requiredPermissions) else hasPermissions = true
     }
 
     fun getManager(): NearbyConnectionManager {
@@ -577,286 +941,85 @@ fun NearbyLobbyScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            TextButton(onClick = onBack) {
-                Text("< Back", fontSize = 16.sp, color = themeColors.textSecondary)
-            }
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Nearby / Hotspot Multiplayer", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = themeColors.textPrimary)
-            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                statusText,
-                fontSize = 14.sp,
-                color = themeColors.accentX,
-                fontFamily = FontFamily.Monospace
+                text = "← Back",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onBack)
+                    .padding(vertical = 4.dp, horizontal = 6.dp)
             )
         }
 
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(themeColors.surface)
+                .border(1.dp, themeColors.surfaceBorder, RoundedCornerShape(22.dp))
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(
-                onClick = { if (hasPermissions) onHost(getManager()) else launcher.launch(requiredPermissions) },
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(54.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = themeColors.accentX)
-            ) {
-                Text("Host Game (Hotspot or BT)", color = Color.Black, fontWeight = FontWeight.Bold)
-            }
+            Text(
+                text = "Nearby / Hotspot Play",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = statusText,
+                fontSize = 13.sp,
+                color = Color(0xFF00E676),
+                fontFamily = FontFamily.Monospace
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(26.dp))
 
-            Button(
-                onClick = { if (hasPermissions) onJoin(getManager()) else launcher.launch(requiredPermissions) },
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(54.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = themeColors.accentO)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Join Game", color = Color.White, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF00E676))
+                        .clickable { if (hasPermissions) onHost(getManager()) else launcher.launch(requiredPermissions) }
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Host Game", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF1E202B))
+                        .border(1.dp, Color(0xFF00E676), RoundedCornerShape(14.dp))
+                        .clickable { if (hasPermissions) onJoin(getManager()) else launcher.launch(requiredPermissions) }
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Join Game", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
             }
         }
 
         Text(
-            "Tip: You can connect via Bluetooth, shared Wi-Fi, or by turning on Personal Hotspot on one phone and connecting with the other.",
+            text = "Connect via Bluetooth, shared Wi-Fi, or Personal Hotspot.",
             fontSize = 12.sp,
-            color = themeColors.textSecondary,
-            modifier = Modifier.padding(bottom = 16.dp)
+            color = themeColors.textSecondary
         )
-    }
-}
-
-@Composable
-fun GameScreen(
-    gameMode: GameMode,
-    myRole: String = "X",
-    nearbyManager: NearbyConnectionManager? = null,
-    remoteMove: Int? = null,
-    remoteRestartSignal: Int = 0,
-    onMoveProcessed: () -> Unit = {},
-    themeColors: CustomThemeColors,
-    onBackToMenu: () -> Unit
-) {
-    val engine = remember { GameEngine() }
-    val scope = rememberCoroutineScope()
-
-    var board by remember { mutableStateOf(List(9) { "" }) }
-    var currentPlayer by remember { mutableStateOf("X") }
-    var winner by remember { mutableStateOf<String?>(null) }
-    var isThinking by remember { mutableStateOf(false) }
-
-    fun resetGame(notifyPeer: Boolean = true) {
-        SoundManager.playMoveSound()
-        board = List(9) { "" }
-        currentPlayer = "X"
-        winner = null
-        isThinking = false
-        onMoveProcessed()
-
-        if (gameMode == GameMode.NEARBY_P2P && notifyPeer) {
-            nearbyManager?.sendRestart()
-        }
-    }
-
-    LaunchedEffect(remoteRestartSignal) {
-        if (remoteRestartSignal > 0) {
-            resetGame(notifyPeer = false)
-        }
-    }
-
-    LaunchedEffect(remoteMove) {
-        remoteMove?.let { index ->
-            if (winner == null && board[index].isEmpty()) {
-                SoundManager.playMoveSound()
-                val newBoard = board.toMutableList()
-                newBoard[index] = currentPlayer
-                board = newBoard
-
-                val outcome = engine.checkWinner(board)
-                if (outcome != null) {
-                    winner = outcome
-                    if (winner == "Draw") SoundManager.playDrawSound() else SoundManager.playWinSound()
-                } else {
-                    currentPlayer = if (currentPlayer == "X") "O" else "X"
-                }
-            }
-            onMoveProcessed()
-        }
-    }
-
-    fun handleCellClick(index: Int) {
-        if (board[index].isNotEmpty() || winner != null || isThinking) return
-
-        if (gameMode == GameMode.NEARBY_P2P && currentPlayer != myRole) return
-
-        SoundManager.playMoveSound()
-        val newBoard = board.toMutableList()
-        newBoard[index] = currentPlayer
-        board = newBoard
-
-        if (gameMode == GameMode.NEARBY_P2P) {
-            nearbyManager?.sendMove(index)
-        }
-
-        val outcome = engine.checkWinner(board)
-        if (outcome != null) {
-            winner = outcome
-            if (winner == "Draw") SoundManager.playDrawSound() else SoundManager.playWinSound()
-            return
-        }
-
-        if (gameMode == GameMode.AI && currentPlayer == "X") {
-            currentPlayer = "O"
-            isThinking = true
-
-            scope.launch {
-                delay(300)
-                val bestMove = engine.getBestMove(board)
-                if (bestMove != -1) {
-                    val aiBoard = board.toMutableList()
-                    aiBoard[bestMove] = "O"
-                    board = aiBoard
-                    SoundManager.playMoveSound()
-
-                    val aiOutcome = engine.checkWinner(board)
-                    if (aiOutcome != null) {
-                        winner = aiOutcome
-                        if (winner == "Draw") SoundManager.playDrawSound() else SoundManager.playWinSound()
-                    } else {
-                        currentPlayer = "X"
-                    }
-                }
-                isThinking = false
-            }
-        } else {
-            currentPlayer = if (currentPlayer == "X") "O" else "X"
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBackToMenu) {
-                Text("< Back", fontSize = 16.sp, color = themeColors.textSecondary)
-            }
-            Text(
-                text = when (gameMode) {
-                    GameMode.AI -> "VS AI"
-                    GameMode.TWO_PLAYER -> "2 Players"
-                    GameMode.NEARBY_P2P -> "Nearby P2P (You: $myRole)"
-                    else -> "Game"
-                },
-                color = themeColors.textPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp
-            )
-
-            // Music Controls (Mute + Playlist)
-            MusicControlBar(themeColors = themeColors)
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            val statusText = when {
-                winner == "Draw" -> "It's a Draw!"
-                winner != null -> "$winner Wins!"
-                isThinking -> "AI is thinking..."
-                gameMode == GameMode.NEARBY_P2P && currentPlayer == myRole -> "Your Turn ($myRole)"
-                gameMode == GameMode.NEARBY_P2P -> "Opponent's Turn ($currentPlayer)"
-                else -> "Player $currentPlayer's Turn"
-            }
-            val statusColor = when {
-                winner == "X" || currentPlayer == "X" -> themeColors.accentX
-                winner == "O" || currentPlayer == "O" -> themeColors.accentO
-                else -> themeColors.textPrimary
-            }
-
-            Text(
-                text = statusText,
-                color = statusColor,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(320.dp)
-                .background(themeColors.cardBg, RoundedCornerShape(16.dp))
-                .padding(8.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                for (row in 0..2) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        for (col in 0..2) {
-                            val index = row * 3 + col
-                            val cellValue = board[index]
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .background(themeColors.cellBg, RoundedCornerShape(12.dp))
-                                    .clickable { handleCellClick(index) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = cellValue,
-                                    fontSize = 38.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = if (cellValue == "X") themeColors.accentX else themeColors.accentO
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        OutlinedButton(
-            onClick = { resetGame(notifyPeer = true) },
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .padding(bottom = 24.dp)
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, themeColors.textSecondary.copy(alpha = 0.5f))
-        ) {
-            Text(
-                text = if (gameMode == GameMode.NEARBY_P2P) "Restart Match" else "Restart Game",
-                color = themeColors.textPrimary,
-                fontSize = 16.sp
-            )
-        }
     }
 }
